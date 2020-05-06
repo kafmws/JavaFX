@@ -3,6 +3,8 @@ package Server;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -41,17 +43,18 @@ public class Server {
             while ((line = lineNumberReader.readLine()) != null) {
                 sentences.put(String.valueOf(lineNumberReader.getLineNumber()), line+"\r\n");
             }
+            lineNumberReader.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    synchronized static void uploadSentence(String sentence) throws IOException {
-        RandomAccessFile file = new RandomAccessFile(new File(sentenceFile), "rw");
-        long fileLength = file.length();
-        file.seek(fileLength);
-        file.writeUTF(sentence);
-        file.writeUTF("\r\n");
-        file.close();
+    private static ByteBuffer byteBuffer = ByteBuffer.allocate(1024*40);
+    static void uploadSentence(String sentence) throws IOException {
+        FileChannel fileChannel = new RandomAccessFile(new File(sentenceFile), "rw").getChannel();
+        byteBuffer.put(sentence.getBytes()).flip();
+        fileChannel.position(fileChannel.size()).write(byteBuffer);
+        byteBuffer.clear();
+        fileChannel.close();
     }
 }

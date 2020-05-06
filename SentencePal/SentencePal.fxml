@@ -6,9 +6,9 @@
 <?import java.lang.*?>
 <?import javafx.scene.layout.*?>
 
-<Pane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="536.0" prefWidth="768.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="sentencePal.Controller">
+<Pane fx:id="mainPane" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="536.0" prefWidth="768.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="sentencePal.Controller">
    <children>
-      <Label fx:id="LableHost" layoutX="488.0" layoutY="8.0" prefHeight="24.0" prefWidth="52.0" text="Host:" />
+      <Label fx:id="hostLable" layoutX="488.0" layoutY="8.0" prefHeight="24.0" prefWidth="52.0" text="Host:" />
       <TextField fx:id="hostTextFiled" layoutX="540.0" layoutY="2.0" prefHeight="36.0" prefWidth="148.0" text="127.0.0.1" />
       <Button fx:id="connectBtn" layoutX="688.0" layoutY="2.0" mnemonicParsing="false" onAction="#connect" prefHeight="36.0" prefWidth="60.0" text="连接" />
       <Separator layoutX="8.0" layoutY="37.0" prefHeight="3.0" prefWidth="766.0" />
@@ -59,7 +59,7 @@
          <font>
             <Font size="20.0" />
          </font></TextArea>
-      <ListView fx:id="clientList" layoutX="614.0" layoutY="300.0" prefHeight="199.0" prefWidth="148.0" />
+      <ListView fx:id="clientListView" layoutX="614.0" layoutY="300.0" prefHeight="199.0" prefWidth="148.0" />
       <Label layoutX="608.0" layoutY="270.0" prefHeight="36.0" prefWidth="148.0" text="在线列表">
          <padding>
             <Insets bottom="10.0" left="15.0" right="10.0" top="10.0" />

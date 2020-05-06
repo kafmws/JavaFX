@@ -29,6 +29,7 @@ public class Util {
     }
 
     static void filterString(StringBuilder stringBuilder){
+        if(stringBuilder.length() == 0) return;
         while(Character.isSpaceChar(stringBuilder.charAt(stringBuilder.length() - 1))
                 || Character.isISOControl(stringBuilder.charAt(stringBuilder.length() - 1))
                 || stringBuilder.charAt(stringBuilder.length() - 1) == '\r'

@@ -1,10 +1,13 @@
 package sentencePal;
 
+import javafx.application.Platform;
+import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 
 import java.io.*;
 import java.net.Socket;
 import java.util.*;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 public class Client implements Runnable {
@@ -17,8 +20,11 @@ public class Client implements Runnable {
     private Socket socket;
 
     private StringBuilder req;
+    private String username;
     private String resp;
     private byte[] buf;
+
+    private List<String> clientList;
 
     private Map<String, String> sentences = new HashMap<>();
     private PrintStream screenStream = System.out;
@@ -35,12 +41,16 @@ public class Client implements Runnable {
 
     public Client() {
         loadSentence();
+        username = "";
         buf = new byte[10240];
         req = new StringBuilder();
         File localFile = new File(filename);
         try {
-            if(!localFile.exists()) localFile.createNewFile();
-            writer = new PrintWriter(new FileWriter(localFile),true);
+            if (!localFile.exists()) {
+                if (!localFile.createNewFile())
+                    screenStream.println("failed to create local data file\r\n");
+            }
+            writer = new PrintWriter(new FileWriter(localFile), true);
             sentences.forEach(this::saveSentences);
         } catch (FileNotFoundException e) {
             e.printStackTrace();
@@ -70,46 +80,82 @@ public class Client implements Runnable {
             });
 
             Action check = content -> {
-                if (!content.equals("success")) screenStream.println(content);
+                if (!content.equals("success")) {
+                    screenStream.print(content);
+                }
             };
 
             actionMap.put("share", check);
 
             actionMap.put("upload", check);
 
-            actionMap.put("name", check);
+            actionMap.put("name", content -> {
+                int colon = content.indexOf(':');
+                if(colon == -1){
+                    screenStream.print(content);
+                    return;
+                }
+                String op = content.substring(0,colon);
+                String name = content.substring(colon + 1);
+                String oldName = username;
+                if(op.equals("change")) {
+                    Platform.runLater(()->{
+                        clientList.remove(oldName);
+                        clientList.add(name);
+                    });
+                }
+                username = name;
+            });
 
             actionMap.put("talk", check);
 
             actionMap.put("msg", screenStream::print);
 
             actionMap.put("today", screenStream::print);
+
+            actionMap.put("initClientList",
+                    content -> {
+                        Platform.runLater(()->{
+                            clientList.addAll(Arrays.asList(content.split(String.valueOf((char) 0))));
+                            clientList.removeIf(String::isEmpty);
+                        });
+                    });
+
+            actionMap.put("addClient", content -> Platform.runLater(()->clientList.add(content)));
+
+            actionMap.put("removeClient", content -> Platform.runLater(()->clientList.remove(content)));
+
+            actionMap.put("changeClientName", content -> {
+                Platform.runLater(()->{
+                    String[] names = content.split(String.valueOf((char) 0));
+                    clientList.remove(names[0]);
+                    clientList.add(names[1]);
+                });
+            });
         }
 
-        new Thread(() -> {
-            try {
-                while (isAlive) {
-                    int len = in.read(buf);
-                    if (len == -1) {
-                        close();
-                        break;
-                    }
-                    resp = new String(buf, 0, len);
-//                    System.out.println("resp:\n\t" + resp);
-                    parse();
+        try {
+            while (isAlive) {
+                int len = in.read(buf);
+                if (len == -1) {
+                    close();
+                    break;
                 }
-            } catch (IOException e) {
-                e.printStackTrace();
-            } finally {
-                close();
+                resp = new String(buf, 0, len);
+                for(String msg : resp.split(String.valueOf((char) 1))){
+                    System.out.println("resp:\n\t" + msg);
+                    parse(msg);
+                }
             }
-        }).start();
+        } catch (IOException e) {
+            close();
+        }
     }
 
-    private void parse() {
-        int colon = resp.indexOf(':');
-        String action = resp.substring(0, colon);
-        String content = resp.substring(colon + 1);
+    private void parse(String msg) {
+        int colon = msg.indexOf(':');
+        String action = msg.substring(0, colon);
+        String content = msg.substring(colon + 1);
         service(action, content);
     }
 
@@ -118,7 +164,7 @@ public class Client implements Runnable {
                 .action(content);
     }
 
-    private void close() {
+    void close() {
         if (socket.isClosed()) return;
         try {
             isAlive = false;
@@ -147,6 +193,7 @@ public class Client implements Runnable {
                 var t = line.split(":");
                 sentences.put(t[0], t[1]);
             }
+            br.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -178,6 +225,18 @@ public class Client implements Runnable {
 
     public boolean getAlive() {
         return isAlive;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public List<String> getClientList() {
+        return clientList;
+    }
+
+    public void setClientList(List<String> clientList) {
+        this.clientList = clientList;
     }
 
     public void setScreenStream(PrintStream screenStream) {
